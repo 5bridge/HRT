@@ -116,4 +116,4 @@ Not yet included in this repository. The claims above (64k context on 6GB VRAM)
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE).
+Apache License 2.0 - see [LICENSE](LICENSE).
