@@ -43,15 +43,15 @@ Two components extend HRT beyond a single forward pass:
 
 ```
 hrt/
-├── config.py          # ModelConfig — all architecture hyperparameters
-├── model.py            # HierarchicalRadialTransformerV7 — top-level assembly
-├── ops/                 # qk-norm, SwiGLU FFN
-├── layers/              # LocalConv, HARP, gather/reason/decode cycles, compaction
-├── memory/              # LatentMerger, BinaryTemporalTree (long-context memory)
-└── cache/               # TurboQuantizer, GenerationCache (incremental decoding)
+config.py          # ModelConfig — all architecture hyperparameters
+model.py            # HierarchicalRadialTransformerV7 — top-level assembly
+ops/                 # qk-norm, SwiGLU FFN
+layers/              # LocalConv, HARP, gather/reason/decode cycles, compaction
+memory/              # LatentMerger, BinaryTemporalTree (long-context memory)
+cache/               # TurboQuantizer, GenerationCache (incremental decoding)
 scripts/
-├── verify_model.py      # forward+backward smoke tests across every config flag
-└── train.py              # minimal char-level LM training example
+verify_model.py      # forward+backward smoke tests across every config flag
+train.py              # minimal char-level LM training example
 ```
 
 ## Quickstart
