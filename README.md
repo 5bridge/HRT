@@ -1,5 +1,4 @@
 # Hierarchical Radial Transformer (HRT)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 Standard self-attention costs `O(T²)` in both compute and memory for a sequence of length `T`. HRT instead compresses the sequence into `K` latent vectors (`K << T`, typically 32–256) and does all reasoning in that latent space. Tokens only ever attend *to* and *from* latents, never to each other directly. This trades some fine-grained token-token modeling for:
 
@@ -116,4 +115,4 @@ Not yet included in this repository. The claims above (64k context on 6GB VRAM)
 
 ## License
 
-Apache License 2.0 - see [LICENSE](LICENSE).
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
