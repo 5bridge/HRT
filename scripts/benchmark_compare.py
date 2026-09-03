@@ -1,5 +1,5 @@
 """
-scripts/benchmark_compare_v2.py
+scripts/benchmark_compare.py
 
 More explicit, honest benchmark: HRT vs a vanilla decoder-only Transformer
 of matched parameter count, using a realistic config (d_model=512, matching
