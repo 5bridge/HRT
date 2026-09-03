@@ -49,8 +49,9 @@ hrt/
   memory/              # LatentMerger, BinaryTemporalTree (long-context memory)
   cache/               # TurboQuantizer, GenerationCache (incremental decoding)
 scripts/
-  verify_model.py      # forward+backward smoke tests across every config flag
-  train.py              # minimal char-level LM training example
+  verify_model.py           # forward+backward smoke tests across every config flag
+  train.py                  # minimal char-level LM training example
+  benchmark_compare_v2.py   # HRT vs. matched-parameter vanilla Transformer (see Benchmarks)
 ```
 
 ## Quickstart
@@ -105,13 +106,46 @@ All hyperparameters live in `ModelConfig` (`hrt/config.py`). A few worth knowing
 
 ## Benchmarks
 
-Not yet included in this repository. The claims above (64k context on 6GB VRAM)
+All benchmarks below compare HRT against a standard causal decoder-only Transformer (`nn.MultiheadAttention`, full `O(T²)` self-attention, standard GELU FFN) matched to within ~4% parameter count (~40M params for both models). Both models were trained from scratch, same optimizer (AdamW, lr=3e-4), same batch size, same random seed, on a single **NVIDIA GTX 1660 Ti (6.4 GB VRAM)**. Full benchmark script: [`scripts/benchmark_compare_v2.py`](scripts/benchmark_compare_v2.py).
+
+### 1. Training VRAM vs. sequence length
+
+<img width="1200" height="825" alt="hrt_vram_seqlen" src="https://github.com/user-attachments/assets/e6065c02-65e9-49ca-8786-b5474f7b5364" />
+
+At `d_model=512` (~40M params), the vanilla Transformer already exceeds this GPU's 6.4GB VRAM budget at 16,384 tokens — training at that length is not possible on this card without offloading to system RAM. HRT stays under budget through 16,384 tokens and reaches 32,768 tokens at 8.2GB (i.e. still nearly 2x more usable context than the point where vanilla already fails), thanks to the fixed-size latent bottleneck replacing full pairwise attention.
+
+| seq_len | HRT | Vanilla Transformer |
+|---|---|---|
+| 1,024 | 479 MB | 607 MB |
+| 4,096 | 1.2 GB | 1.9 GB |
+| 8,192 | 2.2 GB | 3.8 GB |
+| 16,384 | 4.2 GB | 7.9 GB *(exceeds this GPU)* |
+| 32,768 | 8.2 GB | *(not measured — already infeasible on this GPU)* |
+
+### 2. Training VRAM vs. model size
+
+<img width="1200" height="825" alt="hrt_vram_dmodel" src="https://github.com/user-attachments/assets/15341081-1068-44e6-a535-7524273ff0df" />
+
+At a fixed context length (4,096 tokens), HRT uses consistently less memory than a matched-parameter vanilla Transformer across every model size tested, and the gap widens as the model grows (334MB vs. 488MB at `d_model=128`, up to 2.74GB vs. 4.05GB at `d_model=1024`) — the advantage isn't an artifact of small models, it scales with them.
+
+### 3. Convergence on real text (enwik9, byte-level)
+
+<img width="1200" height="825" alt="hrt_loss_enwik9" src="https://github.com/user-attachments/assets/a3187f87-e8a9-439a-bce5-0343adc6aae7" />
+
+Both models trained byte-level (vocab_size=256) on a 20MB slice of [enwik9](http://mattmahoney.net/dc/textdata.html), same 300-step budget, `seq_len=512`, `batch_size=8`. HRT reaches ~1.8–1.9 nats/byte, while the matched-parameter vanilla Transformer plateaus around ~2.6 nats/byte and shows little further improvement past step ~40. HRT also sustained a higher token throughput throughout training (~15.3k tok/s vs. ~7.5k tok/s on this run).
+
+### Methodology notes
+
+- Parameter counts are matched by searching for the vanilla Transformer's `n_layers` that lands closest to HRT's total parameter count (within ~4-5%) at a given `d_model`.
+- All numbers are `torch.cuda.max_memory_allocated()` after one full forward+backward pass (worst case: fp32, full autograd graph, no gradient checkpointing, no mixed precision). This is the training regime — it does **not** reflect the lighter-weight incremental generation / int8 KV-cache path (`use_q_cache`), which has a different memory profile.
+- Single seed, single GPU, one run per data point — treat absolute numbers as indicative, not as statistically averaged results. Re-running `scripts/benchmark_compare_v2.py` will reproduce the same trend on comparable hardware.
 
 ## Limitations
 
-- No published head-to-head comparison against standard Transformer baselines yet.
+- Benchmarks above are on a ~40M-parameter model; behavior at much larger scale (500M+) has been informally tested by the author but not yet benchmarked head-to-head in this repository.
 - The latent bottleneck (`n_outer_latents`) trades off fine-grained token-token interaction for efficiency; tasks that need precise pairwise token reasoning (e.g. exact copy/lookup over very long spans) may be harder for this architecture than for full attention.
 - Long-context memory (`BinaryTemporalTree`) has not been stress-tested at very large numbers of pushed chunks beyond `btt_max_levels`.
+- All benchmarks so far use a single seed and a single GPU (GTX 1660 Ti); no variance/multi-seed statistics yet.
 
 ## License
 
