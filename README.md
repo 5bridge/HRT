@@ -51,7 +51,7 @@ hrt/
 scripts/
   verify_model.py           # forward+backward smoke tests across every config flag
   train.py                  # minimal char-level LM training example
-  benchmark_compare_v2.py   # HRT vs. matched-parameter vanilla Transformer (see Benchmarks)
+  benchmark_compare.py   # HRT vs. matched-parameter vanilla Transformer (see Benchmarks)
 ```
 
 ## Quickstart
@@ -105,7 +105,7 @@ All hyperparameters live in `ModelConfig` (`hrt/config.py`). A few worth knowing
 
 ## Benchmarks
 
-All benchmarks below compare HRT against a standard causal decoder-only Transformer (`nn.MultiheadAttention`, full `O(T²)` self-attention, standard GELU FFN) matched to within ~4% parameter count (~40M params for both models). Both models were trained from scratch, same optimizer (AdamW, lr=3e-4), same batch size, same random seed, on a single **NVIDIA GTX 1660 Ti (6.4 GB VRAM)**. Full benchmark script: [`scripts/benchmark_compare_v2.py`](scripts/benchmark_compare_v2.py).
+All benchmarks below compare HRT against a standard causal decoder-only Transformer (`nn.MultiheadAttention`, full `O(T²)` self-attention, standard GELU FFN) matched to within ~4% parameter count (~40M params for both models). Both models were trained from scratch, same optimizer (AdamW, lr=3e-4), same batch size, same random seed, on a single **NVIDIA GTX 1660 Ti (6.4 GB VRAM)**. Full benchmark script: [`scripts/benchmark_compare.py`](scripts/benchmark_compare.py).
 
 ### 1. Training VRAM vs. sequence length
 
@@ -137,7 +137,7 @@ Both models trained byte-level (vocab_size=256) on a 20MB slice of [enwik9](http
 
 - Parameter counts are matched by searching for the vanilla Transformer's `n_layers` that lands closest to HRT's total parameter count (within ~4-5%) at a given `d_model`.
 - All numbers are `torch.cuda.max_memory_allocated()` after one full forward+backward pass (worst case: fp32, full autograd graph, no gradient checkpointing, no mixed precision). This is the training regime — it does **not** reflect the lighter-weight incremental generation / int8 KV-cache path (`use_q_cache`), which has a different memory profile.
-- Single seed, single GPU, one run per data point — treat absolute numbers as indicative, not as statistically averaged results. Re-running `scripts/benchmark_compare.py` will reproduce the same trend on comparable hardware.
+- Single seed, single GPU, one run per data point — treat absolute numbers as indicative, not as statistically averaged results. Re-running `scripts/.py` will reproduce the same trend on comparable hardware.
 
 ## Limitations
 
