@@ -61,7 +61,6 @@ git clone https://github.com/5bridge/HRT.git
 cd HRT
 pip install -e .
 
-python scripts/verify_model.py   # sanity-check forward/backward across configs
 python scripts/train.py          # train a tiny char-level LM (runs on CPU or 6GB+ GPU)
 ```
 
@@ -138,7 +137,7 @@ Both models trained byte-level (vocab_size=256) on a 20MB slice of [enwik9](http
 
 - Parameter counts are matched by searching for the vanilla Transformer's `n_layers` that lands closest to HRT's total parameter count (within ~4-5%) at a given `d_model`.
 - All numbers are `torch.cuda.max_memory_allocated()` after one full forward+backward pass (worst case: fp32, full autograd graph, no gradient checkpointing, no mixed precision). This is the training regime — it does **not** reflect the lighter-weight incremental generation / int8 KV-cache path (`use_q_cache`), which has a different memory profile.
-- Single seed, single GPU, one run per data point — treat absolute numbers as indicative, not as statistically averaged results. Re-running `scripts/benchmark_compare_v2.py` will reproduce the same trend on comparable hardware.
+- Single seed, single GPU, one run per data point — treat absolute numbers as indicative, not as statistically averaged results. Re-running `scripts/benchmark_compare.py` will reproduce the same trend on comparable hardware.
 
 ## Limitations
 
